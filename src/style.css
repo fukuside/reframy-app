@@ -1,0 +1,244 @@
+/* === 全体共通 === */
+body {
+  background-color: #fff3e0; /* 背景色（明るいベージュ） */
+  font-family: "Arial", sans-serif;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
+
+/* ロゴ画像のスタイル（トップ画面上部） */
+.logo {
+  width: 150px;
+  margin-top: 20px;
+}
+
+/* タイトルとサブタイトル */
+.title {
+  font-size: 28px;
+  font-weight: bold;
+  margin-top: 10px;
+}
+.subtitle {
+  font-size: 16px;
+  margin: 10px 0;
+}
+
+/* ============================= */
+/* ボタン（通常のbutton class） */
+/* ============================= */
+.button {
+  padding: 1rem 2rem;
+  background-color: #ff9800;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+  margin: 10px;
+}
+
+/* ボタンの hover 効果 */
+.button:hover,
+.btn:hover {
+  background-color: #e68900;
+}
+
+/* ============================= */
+/* ボタン（汎用クラス名 .btn）  */
+/* ============================= */
+.btn {
+  background-color: #ff9800;
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  margin: 8px;
+  transition: background-color 0.2s ease;
+}
+
+/* ============================= */
+/* アニメーション付き画像ボタン */
+/* ============================= */
+.animated-button {
+  width: 200px;
+  height: 200px;
+  cursor: pointer;
+  animation: pulse 1.5s infinite;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.animated-button:hover {
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* パルスアニメーション */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+}
+
+/* ============================= */
+/* ボタン配置コンテナ             */
+/* ============================= */
+.button-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end; /* ← 高さ揃える */
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+/* ============================= */
+/* 中央コンテナ                   */
+/* ============================= */
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: #fff3e0;
+  text-align: center;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* ============================= */
+/* シーン一覧関連                 */
+/* ============================= */
+.scene-grid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.scene-wrapper {
+  width: 250px;
+}
+
+.scene-content {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* シーン画像（共通） */
+.scene-image {
+  width: 40%;
+  height: auto;
+  border-radius: 8px;
+}
+.scene-image.small {
+  width: 40%;
+}
+.scene-image.large {
+  max-width: 40%;
+}
+
+/* タイトル（シーン名など） */
+.scene-title {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+/* ============================= */
+/* テキスト入力エリア             */
+/* ============================= */
+textarea {
+  width: 100%;
+  height: 120px;
+  font-size: 1rem;
+  border: 2px solid #ccc;
+  border-radius: 10px;
+  padding: 10px;
+  background-color: #fffbe8;
+  resize: none;
+  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1rem;
+}
+
+/* ============================= */
+/* アドバイス表示バブル           */
+/* ============================= */
+.advice-wrapper {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.advisor-image {
+  width: 80px;
+  height: auto;
+  animation: float 2s ease-in-out infinite;
+}
+
+.advice-bubble {
+  background-color: #fff9c4;
+  border-radius: 12px;
+  padding: 1rem;
+  max-width: 300px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  animation: fadeIn 0.5s ease forwards;
+  position: relative;
+}
+.advice-bubble::before {
+  content: "";
+  position: absolute;
+  left: -10px;
+  top: 20px;
+  border: 10px solid transparent;
+  border-right-color: #fff9c4;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* ============================= */
+/* その他グループ表示（評価下部） */
+/* ============================= */
+.button-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+/* ============================= */
+/* 例バブル（シーン回答例）       */
+/* ============================= */
+.example-bubble {
+  margin-top: 1rem;
+  background: #f0f8ff;
+  padding: 1rem;
+  max-width: 300px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}

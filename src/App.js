@@ -8,6 +8,7 @@ import UserInput from "./pages/UserInput";
 import SceneListPage from "./pages/SceneListPage";
 import RuleAdmin from "./pages/RuleAdmin"; // 管理画面
 import About from "./pages/About"; // 追加説明画面ルート
+import Glossary from "./pages/Glossary"; // 用語説明ルート
 
 function AppContent() {
   const { loadSounds } = useSoundManager();
@@ -24,6 +25,7 @@ function AppContent() {
 
   return (
     <Routes>
+      <Route path="/glossary" element={<Glossary />} />
       <Route path="/" element={<SceneSelect />} />
       <Route path="/select" element={<SceneListPage />} />
       <Route path="/input/:id" element={<UserInput />} />

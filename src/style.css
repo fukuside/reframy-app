@@ -102,7 +102,7 @@ body {
 /* 中央コンテナ                   */
 /* ============================= */
 .container {
-  max-width: 600px;
+  max-width: 960px;
   margin: 0 auto;
   padding: 2rem;
   background: #fff3e0;
@@ -241,4 +241,47 @@ textarea {
   text-align: center;
   border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+/* カテゴリ見出し */
+.category-title {
+  font-size: 22px;
+  font-weight: bold;
+  color: #ff7043;
+  margin: 2rem 0 1rem;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* カテゴリごとのグリッド */
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1rem;
+  justify-items: center;
+}
+
+/* カード（再利用） */
+.scene-card {
+  width: 140px;
+  padding: 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: center;
+  background: transparent; /* ← 背景なし */
+  box-shadow: none;        /* ← 影なし */
+  transition: transform 0.2s ease;
+}
+
+.scene-card:hover {
+  transform: scale(1.03);
+}
+
+.helper-eval-box {
+  background-color: #f0f8ff;
+  border: 1px dashed #0077cc;
+  padding: 1rem;
+  margin-top: 1rem;
+  border-radius: 8px;
 }

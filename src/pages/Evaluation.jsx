@@ -1,7 +1,6 @@
-import { evaluateAnswer } from "../logic/evaluateAnswer";
-import scenes from "../data/scenes"; // 念のため評価元も
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { evaluateAnswer } from "../logic/evaluateAnswer";
 import { useSoundManager } from "../hooks/SoundProvider";
 import useBgmManager from "../hooks/useBgmManager";
 import "../style.css";
@@ -10,7 +9,7 @@ export default function Evaluation() {
   const navigate = useNavigate();
   const location = useLocation();
   const { playSound } = useSoundManager();
-  useBgmManager(); // ✅ BGM を再生（bgm_story）
+  useBgmManager();
 
   const scene = location.state?.scene;
   const responses = location.state?.responses || [];
@@ -21,33 +20,34 @@ export default function Evaluation() {
   const [showAdvice, setShowAdvice] = useState({});
 
   useEffect(() => {
-  const evaluateLocally = () => {
-    setLoading(true);
-    try {
-      const resultList = responses.map((res) => {
-        const question = scene.questions.find((q) => q.id === res.questionId);
-        const evalResult = evaluateAnswer(res.userResponse, question.evaluation);
-        return {
-          questionId: res.questionId,
-          childUtterance: question.child,
-          userResponse: res.userResponse,
-          comment: evalResult.result,
-          advice: evalResult.advice
-        };
-      });
-
-      setResults(resultList);
-    } catch (err) {
-      console.error("ローカル評価エラー:", err);
-    } finally {
+    if (!scene || !scene.questions || responses.length === 0) {
       setLoading(false);
+      return;
     }
-  };
 
-  if (scene && responses.length > 0) {
-    evaluateLocally();
-  }
-}, [scene, responses]);
+    const resultList = responses.map((res) => {
+      const question = scene.questions.find((q) => q.id === res.questionId);
+      if (!question) return null;
+
+      const evalResult = evaluateAnswer(res.userResponse, question.evaluation);
+
+      return {
+        questionId: res.questionId,
+        childUtterance: question.child,
+        userResponse: res.userResponse,
+        comment: evalResult.result,
+        advice: evalResult.advice,
+        matchedPositive: evalResult.matchedPositive || [],
+        matchedNegative: evalResult.matchedNegative || [],
+        matchedMust: evalResult.matchedMust || [],
+        missedMust: evalResult.missedMust || [],
+        example: question.example || "",
+      };
+    }).filter(Boolean);
+
+    setResults(resultList);
+    setLoading(false);
+  }, [scene, responses]);
 
   const toggleExample = (qid) => {
     playSound("fukidasi");
@@ -64,11 +64,13 @@ export default function Evaluation() {
     navigate(path);
   };
 
-  if (!scene) return <div className="container">評価対象が見つかりません。</div>;
+  if (!scene) {
+    return <div className="container">⚠️ 評価対象が見つかりません。</div>;
+  }
 
   return (
     <div className="container" style={{ paddingBottom: "4rem" }}>
-      <h2>{scene.title} の評価</h2>
+      <h2>📝 {scene.title} の評価</h2>
       <img
         src={scene.image}
         alt={scene.title}
@@ -81,15 +83,39 @@ export default function Evaluation() {
         <p style={{ textAlign: "center", marginTop: "2rem" }}>評価中...</p>
       ) : (
         results.map((r) => (
-          <div key={r.questionId} style={{ marginTop: "2rem", borderTop: "1px solid #ccc", paddingTop: "1rem" }}>
+          <div
+            key={r.questionId}
+            style={{
+              marginTop: "2rem",
+              borderTop: "1px solid #ccc",
+              paddingTop: "1rem",
+            }}
+          >
             <p className="bubble">こども「{r.childUtterance}」</p>
-            <p>あなたの声かけ：「{r.userResponse}」</p>
-            <p style={{ color: "green" }}>評価コメント：{r.comment}</p>
+            <p>🗣 あなたの声かけ：「{r.userResponse}」</p>
+            <p style={{ color: "green" }}>📋 評価コメント：{r.comment}</p>
 
-            {/* 回答例 */}
+            <div className="keyword-match">
+              {r.matchedPositive.length > 0 && (
+                <p>🌟 ポジティブワード: {r.matchedPositive.join("、")}</p>
+              )}
+              {r.matchedNegative.length > 0 && (
+                <p>⚠️ ネガティブワード: {r.matchedNegative.join("、")}</p>
+              )}
+              {r.matchedMust.length > 0 && (
+                <p>✅ 大事な視点: {r.matchedMust.join("、")}</p>
+              )}
+              {r.missedMust.length > 0 && (
+                <p>❌ 欠けていた視点: {r.missedMust.join("、")}</p>
+              )}
+            </div>
+
             {showExamples[r.questionId] && (
-              <div className="example-bubble" style={{ marginTop: "1rem", whiteSpace: "pre-wrap" }}>
-                例：{scene.questions.find(q => q.id === r.questionId)?.example || "例は登録されていません。"}
+              <div
+                className="example-bubble"
+                style={{ marginTop: "1rem", whiteSpace: "pre-wrap" }}
+              >
+                例：{r.example || "例は登録されていません。"}
               </div>
             )}
             <div style={{ textAlign: "center", marginTop: "0.5rem" }}>
@@ -98,26 +124,58 @@ export default function Evaluation() {
               </button>
             </div>
 
-            {/* アドバイス */}
-            <div className="advice-wrapper" style={{ marginTop: "1rem" }}>
-              <img src="/images/advisor.png" alt="アドバイザー" className="advisor-image" />
+            {/* ワンポイントアドバイス */}
+            <div
+              className="advice-wrapper"
+              style={{
+                marginTop: "1.5rem",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}
+            >
+              <img
+                src="/images/advisor.png"
+                alt="アドバイザー"
+                className="advisor-image"
+              />
               {showAdvice[r.questionId] && (
-                <div className="advice-bubble">
-                  {scene.questions.find(q => q.id === r.questionId)?.advice || "アドバイスは準備中です。"}
+                <div
+                  className="advice-bubble"
+                  style={{ textAlign: "left", maxWidth: "80%" }}
+                >
+                  {r.advice || "アドバイスは準備中です。"}
                 </div>
               )}
-            </div>
-            <div style={{ textAlign: "center", marginTop: "0.5rem" }}>
-              <button className="btn" onClick={() => toggleAdvice(r.questionId)}>
-                💡 ワンポイントアドバイス
-              </button>
+              <div style={{ marginTop: "0.5rem" }}>
+                <button className="btn" onClick={() => toggleAdvice(r.questionId)}>
+                  💡 ワンポイントアドバイス
+                </button>
+              </div>
             </div>
           </div>
         ))
       )}
 
-      {/* ナビゲーション */}
-      <div style={{ marginTop: "3rem", display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
+      <div
+        style={{
+          marginTop: "3rem",
+          display: "flex",
+          gap: "1rem",
+          justifyContent: "center",
+          flexWrap: "wrap",
+        }}
+      >
+        <button
+          className="btn"
+          onClick={() =>
+            navigate(`/input/${scene.id}`, {
+              state: { scene, retryMode: true },
+            })
+          }
+        >
+          🔁 もう一度ロールプレイに挑戦
+        </button>
         <button className="btn" onClick={() => handleClick("/")}>トップへ戻る</button>
         <button className="btn" onClick={() => handleClick("/select")}>一覧へ戻る</button>
       </div>

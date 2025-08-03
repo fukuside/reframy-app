@@ -3,8 +3,8 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-import { BrowserRouter } from 'react-router-dom'; // ✅ Router追加
-import * as serviceWorkerRegistration from './serviceWorkerRegistration'; // ✅ 追加
+import { BrowserRouter } from 'react-router-dom';
+import { register } from './serviceWorkerRegistration'; // ✅ 修正済み
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -16,5 +16,4 @@ root.render(
 );
 
 reportWebVitals();
-serviceWorkerRegistration.register(); // ✅ 登録呼び出し
-
+register(); // ✅ ここも忘れずに

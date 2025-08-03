@@ -43,7 +43,6 @@ function AppContent() {
         <Route path="/admin/rules" element={<RuleAdmin />} />
         <Route path="/about" element={<About />} /> {/* ✅ 追加 */}
       </Routes>
-      <FeedbackWidget /> {/* ✅ フィードバックウィジェット常時表示 */}
 
       {showPopup && (
         <div

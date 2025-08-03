@@ -1,21 +1,22 @@
-import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom"; // ← ✅ useNavigate を含める
+import React, { useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useSoundManager } from "../hooks/SoundProvider";
-import useBgmManager from "../hooks/useBgmManager"; // ← これが必要！
+import useBgmManager from "../hooks/useBgmManager";
+import FeedbackWidget from "../components/FeedbackWidget"; // ✅ 追加
 import "../style.css";
 
 export default function SceneSelect() {
   const { playSound } = useSoundManager();
-  const navigate = useNavigate(); // ✅ これを追加！
-  useBgmManager(); // ✅ BGM（bgm_home）を自動再生
+  const navigate = useNavigate();
+  useBgmManager();
 
-  // ✅ 初回クリックでBGM再生許可を取得（自動再生ブロック対策）
+  // 初回クリックでBGM再生許可
   useEffect(() => {
     const unlockAudio = () => {
       playSound("bgm_home", { loop: true, volume: 0.4 });
       document.removeEventListener("click", unlockAudio);
     };
-    document.addEventListener("click",unlockAudio);
+    document.addEventListener("click", unlockAudio);
 
     return () => {
       document.removeEventListener("click", unlockAudio);
@@ -34,23 +35,24 @@ export default function SceneSelect() {
 
       <div className="button-container">
         <div
-  onClick={() => {
-    playSound("tap");
-    navigate("/select", { state: { from: "home" } }); // ← ✅ これでBGM切替成功
-  }}
-  style={{ cursor: "pointer" }}
->
-  <img
-    src="/images/lets_try_button.png"
-    alt="レッツトライ"
-    className="animated-button"
-  />
-</div>
+          onClick={() => {
+            playSound("tap");
+            navigate("/select", { state: { from: "home" } });
+          }}
+          style={{ cursor: "pointer" }}
+        >
+          <img
+            src="/images/lets_try_button.png"
+            alt="レッツトライ"
+            className="animated-button"
+          />
+        </div>
 
-      <div onClick={() => {
-          playSound("tap");
-          navigate("/about",{ state: { from: "home" } }); // ✅ 明示的に指定
-        }}
+        <div
+          onClick={() => {
+            playSound("tap");
+            navigate("/about", { state: { from: "home" } });
+          }}
           style={{ cursor: "pointer" }}
         >
           <img
@@ -59,14 +61,14 @@ export default function SceneSelect() {
             className="animated-button"
             style={{ width: "180px", cursor: "pointer" }}
           />
-        </div>  
+        </div>
       </div>
 
       <footer style={{ marginTop: "3rem", fontSize: "1.0rem", color: "#555" }}>
         一般社団法人福祉でつながる会
       </footer>
+
+      <FeedbackWidget /> {/* ✅ フィードバック吹き出しをトップのみ表示 */}
     </main>
   );
 }
-
-

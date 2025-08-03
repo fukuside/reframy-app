@@ -1,3 +1,17 @@
+# reframyアプリ
+
+## デモリンク
+🔗 [アプリを体験する（Vercel公開）](https://reframy-app.vercel.app) ← 追加
+
+## アプリ概要
+ReframyはReactで開発された子育てアプリです。Vercelで公開しています。
+主な機能：
+‐リフレーミング
+‐ペアレントトレーニング
+‐子育ての練習
+‐体験的に学べる
+‐何度も失敗できる
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).

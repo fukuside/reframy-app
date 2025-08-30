@@ -1,19 +1,17 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
-import { BrowserRouter } from 'react-router-dom';
-import { register } from './serviceWorkerRegistration'; // ✅ 修正済み
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import App from "./App";
+import { SoundProvider } from "./hooks/SoundProvider";
+import "./style.css";
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <SoundProvider>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </SoundProvider>
   </React.StrictMode>
 );
-
-reportWebVitals();
-register(); // ✅ ここも忘れずに

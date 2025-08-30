@@ -1,6 +1,7 @@
+// src/pages/Evaluation.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { evaluateAnswer } from "../logic/evaluateAnswer";
+import evaluateAnswer from "../logic/evaluateAnswer";
 import { useSoundManager } from "../hooks/SoundProvider";
 import useBgmManager from "../hooks/useBgmManager";
 import "../style.css";
@@ -8,7 +9,10 @@ import "../style.css";
 export default function Evaluation() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { playSound } = useSoundManager();
+
+  // ✅ フックは無条件に呼ぶ（ルール・オブ・フック対応）
+  const soundMgr = useSoundManager();
+  const playSound = soundMgr?.playSound ?? (() => {});
   useBgmManager();
 
   const scene = location.state?.scene;
@@ -25,25 +29,27 @@ export default function Evaluation() {
       return;
     }
 
-    const resultList = responses.map((res) => {
-      const question = scene.questions.find((q) => q.id === res.questionId);
-      if (!question) return null;
+    const resultList = responses
+      .map((res) => {
+        const question = scene.questions.find((q) => q.id === res.questionId);
+        if (!question) return null;
 
-      const evalResult = evaluateAnswer(res.userResponse, question.evaluation);
+        const evalResult = evaluateAnswer(res.userResponse, question.evaluation);
 
-      return {
-        questionId: res.questionId,
-        childUtterance: question.child,
-        userResponse: res.userResponse,
-        comment: evalResult.result,
-        advice: evalResult.advice,
-        matchedPositive: evalResult.matchedPositive || [],
-        matchedNegative: evalResult.matchedNegative || [],
-        matchedMust: evalResult.matchedMust || [],
-        missedMust: evalResult.missedMust || [],
-        example: question.example || "",
-      };
-    }).filter(Boolean);
+        return {
+          questionId: res.questionId,
+          childUtterance: question.child,
+          userResponse: res.userResponse,
+          comment: evalResult.result,
+          advice: evalResult.advice,
+          matchedPositive: evalResult.matchedPositive || [],
+          matchedNegative: evalResult.matchedNegative || [],
+          matchedMust: evalResult.matchedMust || [],
+          missedMust: evalResult.missedMust || [],
+          example: question.example || "",
+        };
+      })
+      .filter(Boolean);
 
     setResults(resultList);
     setLoading(false);
@@ -106,7 +112,7 @@ export default function Evaluation() {
                 <p>✅ 大事な視点: {r.matchedMust.join("、")}</p>
               )}
               {r.missedMust.length > 0 && (
-                <p>❌ 欠けていた視点: {r.missedMust.join("、")}</p>
+                <p>💡欠けていた視点: {r.missedMust.join("、")}</p>
               )}
             </div>
 
@@ -124,7 +130,6 @@ export default function Evaluation() {
               </button>
             </div>
 
-            {/* ワンポイントアドバイス */}
             <div
               className="advice-wrapper"
               style={{
@@ -134,16 +139,9 @@ export default function Evaluation() {
                 alignItems: "center",
               }}
             >
-              <img
-                src="/images/advisor.png"
-                alt="アドバイザー"
-                className="advisor-image"
-              />
+              <img src="/images/advisor.png" alt="アドバイザー" className="advisor-image" />
               {showAdvice[r.questionId] && (
-                <div
-                  className="advice-bubble"
-                  style={{ textAlign: "left", maxWidth: "80%" }}
-                >
+                <div className="advice-bubble" style={{ textAlign: "left", maxWidth: "80%" }}>
                   {r.advice || "アドバイスは準備中です。"}
                 </div>
               )}
@@ -167,15 +165,14 @@ export default function Evaluation() {
         }}
       >
         <button
-          className="btn"
-          onClick={() =>
-            navigate(`/input/${scene.id}`, {
-              state: { scene, retryMode: true },
-            })
-          }
-        >
-          🔁 もう一度ロールプレイに挑戦
-        </button>
+  className="btn"
+  onClick={() => {
+    try { playSound && playSound("tap"); } catch {}
+    navigate(`/input/${scene.id}`, { state: { retryMode: true } });
+  }}
+>
+  🔁 もう一度ロールプレイに挑戦
+</button>
         <button className="btn" onClick={() => handleClick("/")}>トップへ戻る</button>
         <button className="btn" onClick={() => handleClick("/select")}>一覧へ戻る</button>
       </div>

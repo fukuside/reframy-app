@@ -2,46 +2,39 @@ import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { useSoundManager } from "./SoundProvider";
 
+const SWITCH_DELAY_MS = 60;
+
 export default function useBgmManager() {
-  const { playSound, stopSound } = useSoundManager();
+  const sound = useSoundManager() || {};
   const location = useLocation();
-  const currentBgm = useRef("");
+  const currentKeyRef = useRef("");
+
+  const pickBgmKey = (path, from) => {
+    if (path === "/") return "bgm_home";
+    if (path.startsWith("/select")) return "bgm_solo";
+    if (path.startsWith("/input")) return "bgm_solo";
+    if (path.startsWith("/evaluation")) return "bgm_end";
+    if (path.startsWith("/about")) {
+      if (from === "home") return null; // ← ホームからの About はBGM維持
+      return "bgm_home";
+    }
+    return "bgm_home";
+  };
 
   useEffect(() => {
-    const path = location.pathname;
-    const from = location.state?.from??"null";
-    let bgmKey = "";
+    const path = location.pathname || "/";
+    const from = location.state?.from || null;
+    const nextKey = pickBgmKey(path, from);
 
-    if (path === "/") {
-      bgmKey = "bgm_home";       // トップページ
-    } else if (path.startsWith("/select")) {
-      bgmKey = "bgm_solo";       // シーン一覧
-    } else if (path.startsWith("/input")) {
-      bgmKey = "bgm_solo";       // 声かけ入力
-    } else if (path.startsWith("/evaluation")) {
-      bgmKey = "bgm_end";        // 評価画面
-     } else if (path.startsWith("/about")) {
-     // 🔽 from=home の場合は BGM 継続、stop せずにそのまま
-      if (from === "home") {
-        console.log("✅ /about: BGM維持 (from: home)");
-        return; // ❗ useEffect の残りをスキップ（stop もしない）
-      } else {
-        bgmKey = "bgm_home";
-      }
-    }
-    // 変更なしなら再生不要
-    if (!bgmKey || currentBgm.current === bgmKey) return;
+    if (nextKey === null) return;                 // 維持
+    if (!nextKey || nextKey === currentKeyRef.current) return;
 
-    console.log("🎵 BGM切り替え:", currentBgm.current, "→", bgmKey);
+    const t = setTimeout(() => {
+      sound.stopSound?.();
+      sound.playSound?.(nextKey, { loop: true, volume: 0.4 });
+      currentKeyRef.current = nextKey;
+    }, SWITCH_DELAY_MS);
 
-     // ⚠️ stopSound を少し遅らせる（安定性向上）
-  setTimeout(() => {
-    stopSound();
-    playSound(bgmKey, { loop: true,volume: 0.4 });
-    currentBgm.current = bgmKey;
-}, 100); // ← 小さな遅延を挟むと競合回避できることあり
-    return () => {
-      stopSound();
-    };
-  }, [location.pathname, location.state?.from]);
+    return () => clearTimeout(t);
+  }, [location.key]);
 }

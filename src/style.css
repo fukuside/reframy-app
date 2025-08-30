@@ -60,6 +60,7 @@ body {
   margin: 8px;
   transition: background-color 0.2s ease;
 }
+.btn:disabled { opacity: .6; cursor: not-allowed; }
 
 /* ============================= */
 /* アニメーション付き画像ボタン */
@@ -70,8 +71,12 @@ body {
   cursor: pointer;
   animation: pulse 1.5s infinite;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
 
+  /* クリック性＆モバイル操作性を向上 */
+  user-select: none;
+  -webkit-user-drag: none;
+  -webkit-tap-highlight-color: transparent;
+}
 .animated-button:hover {
   transform: translateY(-4px) scale(1.03);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -79,12 +84,8 @@ body {
 
 /* パルスアニメーション */
 @keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.03);
-  }
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
 }
 
 /* ============================= */
@@ -96,6 +97,15 @@ body {
   align-items: flex-end; /* ← 高さ揃える */
   gap: 1rem;
   margin-top: 2rem;
+
+  /* クリックを確実に前面で受ける */
+  position: relative;
+  z-index: 5;
+  flex-wrap: wrap;
+}
+.button-container > div {
+  position: relative;
+  z-index: 5;
 }
 
 /* ============================= */
@@ -120,11 +130,7 @@ body {
   align-items: center;
   gap: 1rem;
 }
-
-.scene-wrapper {
-  width: 250px;
-}
-
+.scene-wrapper { width: 250px; }
 .scene-content {
   display: flex;
   flex-direction: row-reverse;
@@ -143,12 +149,8 @@ body {
   height: auto;
   border-radius: 8px;
 }
-.scene-image.small {
-  width: 40%;
-}
-.scene-image.large {
-  max-width: 40%;
-}
+.scene-image.small { width: 40%; }
+.scene-image.large { max-width: 40%; }
 
 /* タイトル（シーン名など） */
 .scene-title {
@@ -182,13 +184,11 @@ textarea {
   gap: 1rem;
   margin-top: 2rem;
 }
-
 .advisor-image {
   width: 80px;
   height: auto;
   animation: float 2s ease-in-out infinite;
 }
-
 .advice-bubble {
   background-color: #fff9c4;
   border-radius: 12px;
@@ -206,15 +206,13 @@ textarea {
   border: 10px solid transparent;
   border-right-color: #fff9c4;
 }
-
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes float {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+  50%      { transform: translateY(-4px); }
 }
 
 /* ============================= */
@@ -242,6 +240,7 @@ textarea {
   border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
+
 /* カテゴリ見出し */
 .category-title {
   font-size: 22px;
@@ -273,11 +272,9 @@ textarea {
   box-shadow: none;        /* ← 影なし */
   transition: transform 0.2s ease;
 }
+.scene-card:hover { transform: scale(1.03); }
 
-.scene-card:hover {
-  transform: scale(1.03);
-}
-
+/* リアルタイム評価（ロールプレイヘルパー） */
 .helper-eval-box {
   background-color: #f0f8ff;
   border: 1px dashed #0077cc;
@@ -285,3 +282,59 @@ textarea {
   margin-top: 1rem;
   border-radius: 8px;
 }
+
+/* ============================= */
+/* クリック奪取対策（重要）       */
+/* ============================= */
+/* フィードバックの外枠がクリックを奪わないようにする */
+.feedback-overlay { 
+  position: fixed;
+  inset: 0;
+  pointer-events: none; 
+  z-index: 3;
+}
+/* 中の実体は操作可能に戻す */
+.feedback-overlay * { pointer-events: auto; }
+
+/* 念のため、クリックしたい要素を最前面に */
+.z-fg { position: relative; z-index: 10; }
+
+/* ============================= */
+/* モバイル対応                   */
+/* ============================= */
+@media (max-width: 600px) {
+  .animated-button { width: 160px; height: 160px; }
+  .button-container { gap: .75rem; }
+  .scene-image { width: 60%; }
+  .advisor-image { width: 64px; }
+}
+/* クリック可能ブロックは最前面に */
+.nav-fore {
+  position: relative;
+  z-index: 20;
+  pointer-events: auto;
+}
+
+/* 画像をリンクとして扱う時のリセット */
+.img-link {
+  display: inline-block;
+  border: 0;
+  outline: none;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* 右下のフィードバックはページのクリックを邪魔しない */
+.feedback-overlay {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 10;            /* ボタンより下にする（nav-fore が 20） */
+  pointer-events: none;   /* ラッパーはイベント透過 */
+}
+.feedback-overlay * {
+  pointer-events: auto;   /* ウィジェット自身は操作できる */
+}
+/* クリックが効かない場合の保険 */
+.button-container { position: relative; z-index: 10; }
+.feedback-overlay { z-index: 1; } /* フィードバックの吹き出しがボタンより下になるように */

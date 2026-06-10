@@ -12,10 +12,13 @@ export default function useBgmManager() {
   const pickBgmKey = (path, from) => {
     if (path === "/") return "bgm_home";
     if (path.startsWith("/select")) return "bgm_solo";
-    if (path.startsWith("/input")) return "bgm_solo";
+
+    // 問題回答画面ではBGMを止める
+    if (path.startsWith("/input")) return "silent";
+
     if (path.startsWith("/evaluation")) return "bgm_end";
     if (path.startsWith("/about")) {
-      if (from === "home") return null; // ← ホームからの About はBGM維持
+      if (from === "home") return null; // ホームからの About はBGM維持
       return "bgm_home";
     }
     return "bgm_home";
@@ -26,12 +29,17 @@ export default function useBgmManager() {
     const from = location.state?.from || null;
     const nextKey = pickBgmKey(path, from);
 
-    if (nextKey === null) return;                 // 維持
+    if (nextKey === null) return; // 維持
     if (!nextKey || nextKey === currentKeyRef.current) return;
 
     const t = setTimeout(() => {
       sound.stopSound?.();
-      sound.playSound?.(nextKey, { loop: true, volume: 0.4 });
+
+      // silent の場合は停止だけして再生しない
+      if (nextKey !== "silent") {
+        sound.playSound?.(nextKey, { loop: true, volume: 0.4 });
+      }
+
       currentKeyRef.current = nextKey;
     }, SWITCH_DELAY_MS);
 

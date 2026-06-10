@@ -5,10 +5,11 @@ import synonymMap from "./synonyms";
 function stripSentenceTail(s = "") {
   return s.replace(/(かな|かも|だよね|だよ|だね|よね|よ|ね|な|さ)+$/g, "");
 }
+
 function normalize(text = "") {
   if (typeof text !== "string") text = String(text ?? "");
   const toHalf = text.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (ch) =>
-    String.fromCharCode(ch.charCodeAt(0) - 0xFEE0)
+    String.fromCharCode(ch.charCodeAt(0) - 0xfee0)
   );
   const removed = toHalf
     .toLowerCase()
@@ -19,83 +20,275 @@ function normalize(text = "") {
     .trim();
   return stripSentenceTail(removed);
 }
+
 function asArray(v) {
   if (Array.isArray(v)) return v;
   if (v && typeof v === "object") return Object.values(v);
   if (v == null) return [];
   return [v];
 }
+
 function uniq(arr) {
   return Array.from(new Set(arr.filter(Boolean)));
 }
 
-/** 既存のシノニム展開（positive/negative向け） */
 function expandWithSynonyms(kw) {
   const list = synonymMap?.[kw] ?? [];
   return uniq([kw, ...(Array.isArray(list) ? list : [])]);
 }
 
-/** must向けの“緩和”つき展開（汎用ヒューリスティックを追加） */
+function includesAny(words, textN) {
+  return words.some((word) => {
+    const k = normalize(word);
+    return k.length > 0 && textN.includes(k);
+  });
+}
+
+function makeMatcher(words) {
+  return (textN) => includesAny(words, textN);
+}
+
+/* ---------- 共通評価軸 ---------- */
+const AXES = [
+  {
+    key: "empathy",
+    label: "気持ちの受け止め",
+    weight: 2,
+    words: [
+      "そっか",
+      "そうだね",
+      "そうなんだ",
+      "わかる",
+      "わかった",
+      "気持ちわかる",
+      "嫌だよね",
+      "いやだよね",
+      "つらいね",
+      "しんどいね",
+      "大変だったね",
+      "疲れたね",
+      "疲れたんだね",
+      "眠いね",
+      "悲しかったね",
+      "悔しかったね",
+      "不安だよね",
+      "怖かったね",
+      "びっくりしたね",
+      "頑張ったね",
+      "頑張ってるね",
+    ],
+  },
+  {
+    key: "proposal",
+    label: "具体的な提案",
+    weight: 2,
+    words: [
+      "休憩",
+      "休んでから",
+      "少し休んで",
+      "ちょっと休憩",
+      "一休み",
+      "ひと休み",
+      "あとで",
+      "後で",
+      "一緒に",
+      "一緒にやろう",
+      "一緒に考えよう",
+      "手伝う",
+      "手伝おうか",
+      "分けて",
+      "少しずつ",
+      "まず",
+      "ここから",
+      "できるところから",
+      "終わったら",
+      "タイマー",
+      "5分",
+      "ごふん",
+    ],
+  },
+  {
+    key: "choice",
+    label: "選択肢・自主性",
+    weight: 2,
+    words: [
+      "どっち",
+      "どれ",
+      "どうしたい",
+      "どうする",
+      "どこから",
+      "何から",
+      "選んで",
+      "選べる",
+      "自分で",
+      "自分のペース",
+      "やりやすい",
+      "できそう",
+      "ならできる",
+      "決めていい",
+      "決めよう",
+      "無理しなくていい",
+      "あとにする",
+      "先にする",
+    ],
+  },
+  {
+    key: "reason",
+    label: "理由の確認",
+    weight: 1,
+    words: [
+      "どうしたの",
+      "どうして",
+      "なんで",
+      "なぜ",
+      "理由",
+      "わけ",
+      "教えて",
+      "聞かせて",
+      "話して",
+      "どこが嫌",
+      "どこが難しい",
+      "何が嫌",
+      "何が難しい",
+    ],
+  },
+  {
+    key: "reassurance",
+    label: "安心感",
+    weight: 1,
+    words: [
+      "大丈夫",
+      "安心して",
+      "そばにいる",
+      "一緒にいる",
+      "大丈夫だよ",
+      "ゆっくり",
+      "落ち着いて",
+      "心配しなくていい",
+    ],
+  },
+];
+
+const NEGATIVE_PATTERNS = [
+  "だめ",
+  "ダメ",
+  "駄目",
+  "早く",
+  "はやく",
+  "急いで",
+  "やりなさい",
+  "しなさい",
+  "しろ",
+  "やれ",
+  "ちゃんとしなさい",
+  "いい加減",
+  "なんでできない",
+  "また",
+  "普通は",
+  "みんなできる",
+  "置いていく",
+  "知らない",
+  "勝手にして",
+  "怒るよ",
+  "泣かない",
+  "泣くな",
+  "うるさい",
+  "わがまま",
+  "怠け",
+  "甘え",
+  "約束でしょ",
+  "もう知らない",
+];
+
+const STRONG_NEGATIVE_PATTERNS = [
+  "しろ",
+  "やれ",
+  "置いていく",
+  "もう知らない",
+  "勝手にして",
+  "怒るよ",
+  "なんでできない",
+  "うるさい",
+  "わがまま",
+];
+
+function buildSceneKeywordMatches(keywords, textN, expander = expandWithSynonyms) {
+  return keywords.filter((kw) => includesAny(expander(kw), textN));
+}
+
 function expandMustVariants(kw) {
   const base = expandWithSynonyms(kw);
-
-  const add = [];
-
   const key = String(kw);
+  const add = [];
   const has = (pat) => new RegExp(pat).test(key);
 
-  // 汎用「理由の確認」「把握」「確認」系
+  // 共通評価軸の語彙も must 判定の補助に使う
+  for (const axis of AXES) {
+    if (has(axis.label) || has(axis.key)) add.push(...axis.words);
+  }
+
   if (has("理由|わけ|原因|把握|確認")) {
-    add.push(
-      "どうしたの", "どうして", "なんで", "なぜ", "理由", "わけ",
-      "教えて", "話してくれる", "聞かせて", "どこが嫌", "どこが難しい"
-    );
+    add.push("どうしたの", "どうして", "なんで", "なぜ", "理由", "わけ", "教えて", "話してくれる", "聞かせて", "どこが嫌", "どこが難しい");
   }
-
-  // 共感・寄り添い
   if (has("共感|寄り添い|気持ち")) {
-    add.push("そっか", "そうだよね", "わかるよ", "つらかったね", "嫌だったね");
+    add.push("そっか", "そうだよね", "わかるよ", "つらかったね", "嫌だったね", "疲れたね", "大変だったね");
   }
-
-  // 安心
   if (has("安心")) {
     add.push("大丈夫", "安心して", "そばにいる", "一緒にいる", "落ち着いていこう");
   }
-
-  // 区切り・切替
-  if (has("区切り|切り替え|切替")) {
-    add.push("一回おしまい", "あと5分", "次のタイミング", "区切りつけよう");
+  if (has("休む|休憩|一息|切り替え|切替|区切り")) {
+    add.push("休憩", "休憩してから", "ちょっと休憩", "少し休憩", "休んでから", "少し休んで", "一休み", "ひと休み", "ちょっと休もう", "少し休もう", "あと5分", "区切り");
   }
-
-  // 見通し・楽しみ
   if (has("楽しみ|見通し|見とおし")) {
     add.push("終わったら", "あとで楽しみ", "次にしよう", "楽しみにしよう");
   }
-
-  // 自主性・工夫
-  if (has("自主性|工夫|自分のペース|自分で")) {
-    add.push("自分のペースで", "無理しなくていい", "やりやすい方法で", "自分でやってみよう");
+  if (has("自主性|工夫|自分のペース|自分で|選択")) {
+    add.push("自分のペースで", "無理しなくていい", "やりやすい方法で", "自分で", "どっち", "どこから", "できそう");
   }
 
   return uniq([...base, ...add]);
 }
 
-function includesAnyVariant(variants, textN) {
-  return variants.some((v) => {
-    const k = normalize(v);
-    return k.length > 0 && textN.includes(k);
+function evaluateCommonAxes(textN) {
+  return AXES.map((axis) => {
+    const matchedWords = axis.words.filter((word) => makeMatcher([word])(textN));
+    return {
+      key: axis.key,
+      label: axis.label,
+      weight: axis.weight,
+      matched: matchedWords.length > 0,
+      matchedWords,
+    };
   });
 }
-function pickExamplesFor(missedKeys = []) {
-  const ex = [];
-  for (const key of missedKeys) {
-    const v = synonymMap?.[key];
-    if (Array.isArray(v) && v.length) {
-      ex.push(`「${v[0]}」`);
-      if (ex.length >= 2) break;
-    }
+
+function buildAdvice({ commonAxes, hasScenePositive, hasSceneMust, hasNegative, hasStrongNegative }) {
+  const matchedLabels = commonAxes.filter((a) => a.matched).map((a) => a.label);
+  const missingLabels = commonAxes.filter((a) => !a.matched).map((a) => a.label);
+
+  if (hasStrongNegative) {
+    return "強い言い方が入っています。まず気持ちを受け止めてから、短い提案に言い換えてみましょう。";
   }
-  return ex;
+
+  if (hasNegative) {
+    return "前向きな要素もありますが、少し強い表現が混ざっています。否定よりも選択肢で伝えるとよくなります。";
+  }
+
+  if (matchedLabels.includes("具体的な提案") && !matchedLabels.includes("気持ちの受け止め")) {
+    return "提案はできています。最初に「疲れたんだね」「嫌だったんだね」を足すと、さらに伝わりやすくなります。";
+  }
+
+  if (matchedLabels.includes("気持ちの受け止め") && !matchedLabels.includes("具体的な提案")) {
+    return "気持ちを受け止められています。次に、休憩・選択肢・一緒に考える提案を一つ足してみましょう。";
+  }
+
+  if (hasScenePositive || hasSceneMust || matchedLabels.length >= 2) {
+    return "よい声かけです。さらに短く、子どもが選べる言い方にすると実際の場面で使いやすくなります。";
+  }
+
+  return missingLabels.length
+    ? `まずは「${missingLabels[0]}」を入れてみましょう。例：「そっか、少し休んでからにしようか」。`
+    : "この調子です。短く、やさしく、選べる言い方を意識しましょう。";
 }
 
 /* ---------- main ---------- */
@@ -119,55 +312,61 @@ export default function evaluateAnswer(input, evaluation) {
     return empty;
   }
 
-  // どの形式でも配列化
   const positives = asArray(evaluation.positive_keywords ?? evaluation.positiveKeywords);
   const negatives = asArray(evaluation.negative_keywords ?? evaluation.negativeKeywords);
-  const musts     = asArray(evaluation.must_include   ?? evaluation.mustInclude);
-  const advice    = evaluation.advice ?? "";
+  const musts = asArray(evaluation.must_include ?? evaluation.mustInclude);
+  const sceneAdvice = evaluation.advice ?? "";
 
   const textN = normalize(String(input ?? ""));
 
-  // ヒット抽出
-  const matchedPositive = positives.filter((kw) => includesAnyVariant(expandWithSynonyms(kw), textN));
-  const matchedNegative = negatives.filter((kw) => includesAnyVariant(expandWithSynonyms(kw), textN));
+  // 1) 共通評価軸で意味をざっくり判定
+  const commonAxes = evaluateCommonAxes(textN);
+  const commonScore = commonAxes.reduce((sum, axis) => sum + (axis.matched ? axis.weight : 0), 0);
+  const matchedAxisLabels = commonAxes.filter((a) => a.matched).map((a) => a.label);
 
-  // must は緩和展開を使う
-  const matchedMust = musts.filter((kw) => includesAnyVariant(expandMustVariants(kw), textN));
-  const missedMust  = musts.filter((kw) => !includesAnyVariant(expandMustVariants(kw), textN));
+  // 2) シーン別キーワードは補助として使う
+  const matchedPositive = buildSceneKeywordMatches(positives, textN);
+  const sceneMatchedNegative = buildSceneKeywordMatches(negatives, textN);
+  const matchedMust = buildSceneKeywordMatches(musts, textN, expandMustVariants);
+  const missedMust = musts.filter((kw) => !includesAny(expandMustVariants(kw), textN));
 
-  const posCount  = matchedPositive.length;
-  const negCount  = matchedNegative.length;
+  // 3) 共通NGも見る
+  const commonNegative = NEGATIVE_PATTERNS.filter((word) => includesAny([word], textN));
+  const strongNegative = STRONG_NEGATIVE_PATTERNS.filter((word) => includesAny([word], textN));
+  const matchedNegative = uniq([...sceneMatchedNegative, ...commonNegative]);
+
+  const posCount = matchedPositive.length;
+  const negCount = matchedNegative.length;
   const mustCount = matchedMust.length;
 
-  // 必須達成の敷居（最低1件）。必要なら 0.1〜0.2 で微調整してください
-  const mustThreshold = Math.max(1, Math.ceil(musts.length * 0.15));
-  const meetsMust     = mustCount >= mustThreshold;
-
+  const hasScenePositive = posCount > 0;
+  const hasSceneMust = mustCount > 0;
   const hasNegative = negCount > 0;
-  const hasPositive = posCount > 0;
+  const hasStrongNegative = strongNegative.length > 0;
 
   let resultMessage = "";
-  if (hasNegative && !hasPositive) {
-    resultMessage =
-      "😟 ネガティブな発言が含まれます。自分の伝えたい思いは分かったけど、相手はどう思うのか？と考えた工夫は必要。";
-  } else if (hasNegative && hasPositive) {
-    resultMessage =
-      "⚖️ 前向きな言葉もあって良い。ただ、少し強すぎる表現が混ざっています。優しい言い回しに置き換えてみましょう。";
-  } else if (hasPositive && !meetsMust) {
-    const ex = pickExamplesFor(missedMust);
-    resultMessage =
-      "😊 ポジティブな声掛けができています。さらに " +
-      (missedMust.length ? missedMust.join("、") : "必須視点") +
-      " を入れるとより良くなります。" +
-      (ex.length ? ` 例：${ex.join("、")}` : "");
-  } else if (posCount >= 3) {
-    resultMessage =
-      "😊✨ ポジティブが複数含まれています。実戦で活用していけますね。あなたの声かけ素敵です。";
-  } else if (posCount > 0) {
-    resultMessage = "😊 ポジティブな声掛けができています。とても良いです！";
+
+  if (hasStrongNegative && commonScore === 0 && !hasScenePositive && !hasSceneMust) {
+    resultMessage = "😟 少し強い言い方です。まず気持ちを受け止めて、選べる言い方に変えてみましょう。";
+  } else if (hasNegative && commonScore <= 1 && !hasScenePositive && !hasSceneMust) {
+    resultMessage = "⚖️ 伝えたいことはありますが、少し強く聞こえる表現があります。やさしい言い方に置き換えてみましょう。";
+  } else if (commonScore >= 4 || (commonScore >= 2 && (hasScenePositive || hasSceneMust))) {
+    resultMessage = "😊✨ とても良い声かけです。気持ちを尊重しながら、次の行動につなげられています。";
+  } else if (commonScore >= 2 || hasScenePositive || hasSceneMust) {
+    resultMessage = "😊 良い声かけです。子どもの気持ちやペースに合わせた表現が入っています。";
+  } else if (textN.length > 0) {
+    resultMessage = "🤔 もう少し、気持ちを受け止める言葉や選択肢を入れてみましょう。";
   } else {
-    resultMessage = "🤔 柔軟な発想が必要です。たくさん練習しましょう。";
+    resultMessage = "回答を入力してから評価してください。";
   }
+
+  const advice = buildAdvice({
+    commonAxes,
+    hasScenePositive,
+    hasSceneMust,
+    hasNegative,
+    hasStrongNegative,
+  }) || sceneAdvice;
 
   const out = {
     result: resultMessage,
@@ -176,14 +375,18 @@ export default function evaluateAnswer(input, evaluation) {
     matchedNegative,
     matchedMust,
     missedMust,
+    matchedAxes: matchedAxisLabels,
+    commonAxes,
+    commonScore,
     positiveCount: posCount,
     negativeCount: negCount,
-    mustCount: mustCount,
+    mustCount,
     pos: posCount,
     neg: negCount,
     must: mustCount,
     textN,
   };
+
   if (typeof window !== "undefined") {
     window.__EVAL_LAST__ = { input, evaluation, ...out };
   }

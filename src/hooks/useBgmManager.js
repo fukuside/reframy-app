@@ -17,10 +17,12 @@ export default function useBgmManager() {
     if (path.startsWith("/input")) return "silent";
 
     if (path.startsWith("/evaluation")) return "bgm_end";
+
     if (path.startsWith("/about")) {
       if (from === "home") return null; // ホームからの About はBGM維持
       return "bgm_home";
     }
+
     return "bgm_home";
   };
 
@@ -32,17 +34,20 @@ export default function useBgmManager() {
     if (nextKey === null) return; // 維持
     if (!nextKey || nextKey === currentKeyRef.current) return;
 
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       sound.stopSound?.();
 
       // silent の場合は停止だけして再生しない
       if (nextKey !== "silent") {
-        sound.playSound?.(nextKey, { loop: true, volume: 0.4 });
+        sound.playSound?.(nextKey, {
+          loop: true,
+          volume: 0.4,
+        });
       }
 
       currentKeyRef.current = nextKey;
     }, SWITCH_DELAY_MS);
 
-    return () => clearTimeout(t);
-  }, [location.key]);
+    return () => clearTimeout(timer);
+  }, [location.key, location.pathname, location.state, sound]);
 }

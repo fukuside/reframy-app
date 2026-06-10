@@ -1,12 +1,11 @@
 import React, { useState } from "react";
-import { Paperclip, MessageCircle } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 
 export default function FeedbackWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [feedbackType, setFeedbackType] = useState("バグ報告");
   const [content, setContent] = useState("");
   const [email, setEmail] = useState("");
-  const [screenshot, setScreenshot] = useState(null);
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = (e) => {
@@ -98,14 +97,6 @@ export default function FeedbackWidget() {
                 onChange={(e) => setContent(e.target.value)}
                 required
                 style={{ width: "100%", height: "80px", marginBottom: "10px" }}
-              />
-
-              <label>スクリーンショット（任意）</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setScreenshot(e.target.files[0])}
-                style={{ marginBottom: "10px" }}
               />
 
               <label>メールアドレス（任意）</label>
